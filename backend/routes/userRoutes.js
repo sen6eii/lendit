@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { registerUser, loginUser, getUser, updateUser, addUserReview } = require('../controllers/userController');
-const authMiddleware = require('../middlewares/authMiddleware'); // Importar el middleware de autenticación
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // Ruta de registro (No requiere autenticación)
 router.post('/register', registerUser);

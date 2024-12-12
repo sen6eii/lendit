@@ -3,20 +3,21 @@ const Group = require('../models/Group'); // Importa el modelo Group si no lo ha
 
 // Middleware de autenticación
 const authMiddleware = (req, res, next) => {
-  // Leer el token del header
-  const token = req.header('Authorization')?.split(' ')[1]; // Quita el "Bearer " del token
+  const token = req.header('Authorization')?.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Acceso denegado. No se proporcionó un token.' });
+      console.log('No se proporcionó un token.');
+      return res.status(401).json({ error: 'Acceso denegado. No se proporcionó un token.' });
   }
 
   try {
-    // Verificar el token
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified; // Guardar el payload del token en req.user
-    next(); // Continuar al siguiente middleware o controlador
+      const verified = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = verified;
+      console.log('Usuario autenticado desde el middleware:', req.user); // <-- Depuración
+      next();
   } catch (error) {
-    res.status(401).json({ error: 'Token inválido.' });
+      console.log('Token inválido.');
+      res.status(401).json({ error: 'Token inválido.' });
   }
 };
 

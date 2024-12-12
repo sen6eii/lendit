@@ -7,6 +7,8 @@ const hasPermission = (group, userId) => {
   return group.id_miembro_owner.equals(userId) || group.colaboradores.includes(userId);
 };
 
+
+
 // Crear un nuevo grupo
 exports.createGroup = async (req, res) => {
   const { grupo_codigo, nombre_grupo, tipo_comunidad, ubicacion, grupo_privado } = req.body;

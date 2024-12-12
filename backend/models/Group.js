@@ -8,10 +8,10 @@ const groupSchema = new mongoose.Schema(
     colaboradores: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Colaboradores con privilegios similares
     grupo_privado: { type: Boolean, default: true },
     nombre_grupo: { type: String, required: true },
-    foto_grupo: { type: String, default: 'https://example.com/default-group-photo.jpg' },
+    foto_grupo: { type: String, default: 'https://img.freepik.com/vector-premium/hermoso-diseno-hogar-vector-vector-logo-icono-vector-clip-dibujos-animados_1277419-108.jpg' },
     tipo_comunidad: {
       type: [String],
-      enum: ['barrio cerrado', 'edificio', 'coworking', 'universidad'],
+      enum: ['barrio cerrado', 'edificio', 'coworking', 'universidad', 'otro'],
       required: true,
       validate: {
         validator: function (v) {

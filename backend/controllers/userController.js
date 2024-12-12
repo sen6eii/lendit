@@ -18,8 +18,13 @@ exports.registerUser = async (req, res) => {
       telefono
     });
 
-    await user.save();
-    res.status(201).json({ mensaje: 'Usuario registrado' });
+    const savedUser = await user.save();
+
+
+    res.status(201).json({
+      mensaje: 'Usuario registrado',
+      id: user._id, // Devuelve el ID generado
+    });
   } catch (error) {
     console.error('Error en el registro:', error);
     res.status(500).json({ error: 'Error al registrar usuario' });
@@ -33,20 +38,30 @@ exports.loginUser = async (req, res) => {
   try {
     // Verificar usuario
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: 'Credenciales incorrectas' });
+    if (!user) {
+      return res.status(400).json({ error: 'Credenciales incorrectas' });
+    }
 
     // Verificar contraseña
     const isMatch = await bcrypt.compare(contraseña, user.contraseña);
-    if (!isMatch) return res.status(400).json({ error: 'Credenciales incorrectas' });
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Credenciales incorrectas' });
+    }
 
     // Generar JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    // Devolver el token y el ID del usuario
+    res.json({
+      token,
+      id: user._id, // Agregar el ID del usuario en la respuesta
+    });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
   }
 };
+
 
 // Obtener un usuario específico
 exports.getUser = async (req, res) => {

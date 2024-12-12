@@ -103,23 +103,26 @@ exports.updateResource = async (req, res) => {
 
 // Eliminar un recurso
 exports.deleteResource = async (req, res) => {
-    try {
+  try {
       const resource = await Resource.findById(req.params.id).populate('grupo');
       if (!resource) return res.status(404).json({ error: 'Recurso no encontrado' });
-  
+
       // Verificar permisos: Solo administrador principal o colaborador puede eliminar recursos
       const group = resource.grupo;
       if (!group.id_miembro_owner.equals(req.user.id) && !group.colaboradores.includes(req.user.id)) {
-        return res.status(403).json({ error: 'No tienes permiso para eliminar este recurso' });
+          return res.status(403).json({ error: 'No tienes permiso para eliminar este recurso' });
       }
-  
-      await resource.remove();
+
+      // Eliminar el recurso
+      await Resource.deleteOne({ _id: resource._id });
+
       res.json({ mensaje: 'Recurso eliminado' });
-    } catch (error) {
+  } catch (error) {
       console.error('Error al eliminar el recurso:', error);
       res.status(500).json({ error: 'Error al eliminar el recurso' });
-    }
-  };
+  }
+};
+
   
 
 // Agregar una calificación a un recurso

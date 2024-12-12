@@ -68,13 +68,30 @@ exports.getLoan = async (req, res) => {
 };
 
 // Obtener préstamos del usuario autenticado
+const mongoose = require('mongoose');
+
 exports.getUserLoans = async (req, res) => {
+  console.log('Entrando a getUserLoans'); // Log inicial
+  console.log('Usuario autenticado:', req.user); // Confirmar datos del usuario
+
   try {
-    const loans = await Loan.find({ prestatario: req.user.id }).populate('recurso_id', 'nombre_recurso estado');
-    res.json(loans);
+      // Validar que req.user.id sea un ObjectId válido
+      if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+          console.log('ID de usuario no válido:', req.user.id);
+          return res.status(400).json({ error: 'ID de usuario no válido' });
+      }
+
+      // Log para depurar el filtro usado
+      console.log('Filtro usado en Loan.find:', { prestatario: req.user.id });
+
+      // Realizar la consulta con un ObjectId válido
+      const loans = await Loan.find({ prestatario: new mongoose.Types.ObjectId(req.user.id) })
+          .populate('recurso_id', 'nombre_recurso estado');
+
+      res.json(loans); // Responder con los préstamos encontrados
   } catch (error) {
-    console.error('Error al obtener los préstamos del usuario:', error);
-    res.status(500).json({ error: 'Error al obtener los préstamos del usuario' });
+      console.error('Error al obtener los préstamos del usuario:', error); // Log del error
+      res.status(500).json({ error: 'Error al obtener los préstamos del usuario' });
   }
 };
 

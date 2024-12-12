@@ -6,7 +6,10 @@ const userSchema = new mongoose.Schema({
   telefono: String,
   contraseña: { type: String, required: true },
   rol: { type: String, default: 'miembro' },
-  foto_perfil: String,
+  foto_perfil: {
+    type: String,
+    default: 'https://thispersondoesnotexist.com/', // URL predeterminada
+  },
   grupos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
   calificaciones: {
     total_calificaciones: { type: Number, default: 0 },

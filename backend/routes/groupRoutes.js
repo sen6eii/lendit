@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createGroup,
-  getGroups,
-  getGroup,
-  addMemberToGroup,
-  removeMemberFromGroup,
-  addCollaborator,
-  removeCollaborator
+    createGroup,
+    getGroups,
+    getGroup,
+    addMemberToGroup,
+    removeMemberFromGroup,
+    addCollaborator,
+    removeCollaborator,
 } = require('../controllers/groupController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // Crear un nuevo grupo
 // Ruta: POST /api/groups
