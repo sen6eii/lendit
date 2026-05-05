@@ -21,9 +21,8 @@ const groupSchema = new mongoose.Schema(
       }
     },
     ubicacion: {
-      latitud: { type: Number, required: true },
-      longitud: { type: Number, required: true },
-      direccion: { type: String }
+      direccion: { type: String },
+      barrio: { type: String }
     },
     miembros: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     recursos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Resource' }]

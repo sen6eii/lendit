@@ -21,10 +21,13 @@ const CreateGroupStep5 = () => {
           Authorization: `Bearer ${token}`, 
         },
         body: JSON.stringify({
-          grupo_codigo: `GRA${Math.floor(1000 + Math.random() * 9000)}`, 
+          grupo_codigo: `GRA${Math.floor(1000 + Math.random() * 9000)}`,
           nombre_grupo: groupData.nombre,
           tipo_comunidad: [groupData.tipoComunidad],
-          ubicacion: groupData.ubicacion,
+          ubicacion: {
+            direccion: groupData.direccion || '',
+            barrio: groupData.barrio || '',
+          },
           grupo_privado: groupData.privacidad === 'grupo_cerrado',
         }),
       });
@@ -64,8 +67,8 @@ const CreateGroupStep5 = () => {
         <View>
           <Text style={styles.groupName}>{groupData.nombre}</Text>
           <Text style={styles.groupLocation}>
-            {groupData.ubicacion
-              ? `${groupData.ubicacion.latitud.toFixed(2)}, ${groupData.ubicacion.longitud.toFixed(2)}`
+            {groupData.direccion || groupData.barrio
+              ? [groupData.direccion, groupData.barrio].filter(Boolean).join(', ')
               : 'Ubicación no especificada'}
           </Text>
           <Text style={styles.groupType}>

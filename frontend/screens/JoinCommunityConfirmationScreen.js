@@ -102,7 +102,7 @@ const JoinCommunityConfirmationScreen = () => {
       <View style={styles.groupDetails}>
         <Text style={styles.groupInfo}>Creador: {groupDetails.id_miembro_owner}</Text>
         <Text style={styles.groupInfo}>
-          Ubicación: {groupDetails.ubicacion?.latitud}, {groupDetails.ubicacion?.longitud}
+          Ubicación: {[groupDetails.ubicacion?.direccion, groupDetails.ubicacion?.barrio].filter(Boolean).join(', ') || 'No especificada'}
         </Text>
         <Text style={styles.groupInfo}>
           Privacidad: {groupDetails.grupo_privado ? 'Cerrado' : 'Público'}
