@@ -74,26 +74,28 @@ exports.getResource = async (req, res) => {
 
 // Actualizar la información de un recurso
 exports.updateResource = async (req, res) => {
-    const { descripcion, fotos, condiciones_uso, dias, punto_entrega, punto_devolucion } = req.body;
-  
+    const { nombre_recurso, descripcion, fotos, condiciones_uso, dias, punto_entrega, punto_devolucion, estado } = req.body;
+
     try {
       const resource = await Resource.findById(req.params.id).populate('grupo');
       if (!resource) return res.status(404).json({ error: 'Recurso no encontrado' });
-  
-      // Verificar permisos: Solo administrador principal o colaborador puede actualizar recursos
+
       const group = resource.grupo;
-      if (!group.id_miembro_owner.equals(req.user.id) && !group.colaboradores.includes(req.user.id)) {
+      const isOwner = resource.propietario.toString() === req.user.id;
+      const isAdmin = group.id_miembro_owner.equals(req.user.id) || group.colaboradores.includes(req.user.id);
+      if (!isOwner && !isAdmin) {
         return res.status(403).json({ error: 'No tienes permiso para actualizar este recurso' });
       }
-  
-      // Actualizar los campos
-      if (descripcion) resource.descripcion = descripcion;
-      if (fotos) resource.fotos = fotos;
-      if (condiciones_uso) resource.condiciones_uso = condiciones_uso;
-      if (dias) resource.dias = dias;
-      if (punto_entrega) resource.punto_entrega = punto_entrega;
-      if (punto_devolucion) resource.punto_devolucion = punto_devolucion;
-  
+
+      if (nombre_recurso !== undefined) resource.nombre_recurso = nombre_recurso;
+      if (descripcion !== undefined) resource.descripcion = descripcion;
+      if (fotos !== undefined) resource.fotos = fotos;
+      if (condiciones_uso !== undefined) resource.condiciones_uso = condiciones_uso;
+      if (dias !== undefined) resource.dias = dias;
+      if (punto_entrega !== undefined) resource.punto_entrega = punto_entrega;
+      if (punto_devolucion !== undefined) resource.punto_devolucion = punto_devolucion;
+      if (estado !== undefined) resource.estado = estado;
+
       await resource.save();
       res.json({ mensaje: 'Recurso actualizado', recurso: resource });
     } catch (error) {

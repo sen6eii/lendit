@@ -162,6 +162,64 @@ const GroupDetailsScreen = () => {
     ]);
   };
 
+  const handleLeaveGroup = () => {
+    Alert.alert('Salir del grupo', '¿Seguro que querés abandonar este grupo?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Salir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('userToken');
+            const res = await fetch(`${BASE_URL}/api/groups/${groupId}/leave`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+              navigation.replace('MainTabs', { screen: 'GroupsTab' });
+            } else {
+              Alert.alert('Error', data.error || 'No se pudo salir del grupo.');
+            }
+          } catch {
+            Alert.alert('Error', 'No se pudo conectar con el servidor.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      'Eliminar grupo',
+      '¿Seguro que querés eliminar este grupo? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('userToken');
+              const res = await fetch(`${BASE_URL}/api/groups/${groupId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const data = await res.json();
+              if (res.ok) {
+                navigation.replace('MainTabs', { screen: 'GroupsTab' });
+              } else {
+                Alert.alert('Error', data.error || 'No se pudo eliminar el grupo.');
+              }
+            } catch {
+              Alert.alert('Error', 'No se pudo conectar con el servidor.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleCompleteLoan = async (loanId) => {
     Alert.alert('Finalizar préstamo', '¿El recurso fue devuelto correctamente?', [
       { text: 'No', style: 'cancel' },
@@ -303,6 +361,10 @@ const GroupDetailsScreen = () => {
           <Text style={styles.adminHint}>
             Compartí este código para que otros usuarios puedan unirse al grupo.
           </Text>
+          <TouchableOpacity style={styles.dangerButton} onPress={handleDeleteGroup}>
+            <Ionicons name="trash-outline" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+            <Text style={styles.dangerButtonText}>Eliminar grupo</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -416,6 +478,12 @@ const GroupDetailsScreen = () => {
           >
             <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 6 }} />
             <Text style={styles.addButtonText}>Agregar recurso</Text>
+          </TouchableOpacity>
+        )}
+        {!isAdmin && activeTab === 'recursos' && (
+          <TouchableOpacity style={styles.leaveButton} onPress={handleLeaveGroup}>
+            <Ionicons name="exit-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <Text style={styles.leaveButtonText}>Salir del grupo</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -544,6 +612,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  leaveButton: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FEE2E2',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  leaveButtonText: { color: '#DC2626', fontWeight: 'bold', fontSize: 15 },
+  dangerButton: {
+    flexDirection: 'row',
+    marginTop: 24,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEE2E2',
+  },
+  dangerButtonText: { color: '#DC2626', fontWeight: 'bold', fontSize: 15 },
   adminPanel: { padding: 24 },
   adminLabel: {
     fontSize: 12,

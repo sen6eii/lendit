@@ -18,7 +18,6 @@ import { addDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const PLACEHOLDER_IMG = 'https://cifer.com.uy/wp-content/uploads/2018/09/5105.png';
-const TIME_SLOTS = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'];
 
 const ResourceDetailsScreen = () => {
   const route = useRoute();
@@ -27,9 +26,10 @@ const ResourceDetailsScreen = () => {
 
   const [resource, setResource] = useState(null);
   const [selectedTab, setSelectedTab] = useState('info');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [currentWeek, setCurrentWeek] = useState([]);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [startWeek, setStartWeek] = useState([]);
+  const [endWeek, setEndWeek] = useState([]);
 
   useEffect(() => {
     const fetchResourceDetails = async () => {
@@ -46,24 +46,28 @@ const ResourceDetailsScreen = () => {
     };
 
     fetchResourceDetails();
-    initializeWeek(new Date());
+    const today = new Date();
+    setStartWeek(Array.from({ length: 7 }, (_, i) => addDays(today, i)));
+    setEndWeek(Array.from({ length: 7 }, (_, i) => addDays(today, i + 1)));
   }, [resourceId]);
 
-  const initializeWeek = (startDate) => {
-    setCurrentWeek(Array.from({ length: 7 }, (_, i) => addDays(startDate, i)));
+  const handleStartDateSelect = (date) => {
+    setStartDate(date);
+    setEndDate(null);
+    setEndWeek(Array.from({ length: 7 }, (_, i) => addDays(date, i + 1)));
   };
 
   const handleReservation = async () => {
-    if (!selectedDate || !selectedTime) {
-      Alert.alert('Atención', 'Seleccioná una fecha y hora para la reserva.');
+    if (!startDate || !endDate) {
+      Alert.alert('Atención', 'Seleccioná fecha de inicio y fecha de devolución.');
       return;
     }
 
     const token = await AsyncStorage.getItem('userToken');
-    const fechaInicio = new Date(selectedDate);
-    fechaInicio.setHours(parseInt(selectedTime.split(':')[0]));
-    const fechaFin = new Date(fechaInicio);
-    fechaFin.setHours(fechaInicio.getHours() + 2);
+    const fechaInicio = new Date(startDate);
+    fechaInicio.setHours(9, 0, 0, 0);
+    const fechaFin = new Date(endDate);
+    fechaFin.setHours(18, 0, 0, 0);
 
     try {
       const response = await fetch(`${BASE_URL}/api/loans`, {
@@ -81,8 +85,21 @@ const ResourceDetailsScreen = () => {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('¡Reserva realizada!', 'Tu reserva fue registrada correctamente.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
+        const groupId = resource.grupo?._id ?? resource.grupo;
+        Alert.alert('¡Solicitud enviada!', 'El dueño del recurso recibirá tu solicitud y la aprobará.', [
+          {
+            text: 'Ver mis reservas',
+            onPress: () => {
+              if (groupId) {
+                navigation.navigate('GroupsTab', {
+                  screen: 'GroupDetails',
+                  params: { groupId: groupId.toString() },
+                });
+              } else {
+                navigation.goBack();
+              }
+            },
+          },
         ]);
       } else {
         Alert.alert('Error', data.error || 'No se pudo realizar la reserva.');
@@ -176,36 +193,23 @@ const ResourceDetailsScreen = () => {
         {selectedTab === 'reservar' && (
           <ScrollView style={styles.reserveScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.infoPadding}>
-              <Text style={styles.sectionTitle}>Seleccioná una fecha</Text>
-              <View style={styles.weekNav}>
-                <TouchableOpacity
-                  style={styles.navBtn}
-                  onPress={() => initializeWeek(addDays(currentWeek[0], -7))}
-                >
-                  <Ionicons name="chevron-back" size={18} color="#1E293B" />
-                </TouchableOpacity>
-                <Text style={styles.navLabel}>
-                  {currentWeek.length > 0
-                    ? `${format(currentWeek[0], 'dd MMM', { locale: es })} – ${format(currentWeek[6], 'dd MMM', { locale: es })}`
-                    : ''}
-                </Text>
-                <TouchableOpacity
-                  style={styles.navBtn}
-                  onPress={() => initializeWeek(addDays(currentWeek[0], 7))}
-                >
-                  <Ionicons name="chevron-forward" size={18} color="#1E293B" />
-                </TouchableOpacity>
-              </View>
+              {resource.estado !== 'disponible' && (
+                <View style={styles.unavailableBanner}>
+                  <Ionicons name="time-outline" size={18} color="#92400E" style={{ marginRight: 8 }} />
+                  <Text style={styles.unavailableText}>Este recurso no está disponible ahora</Text>
+                </View>
+              )}
 
+              <Text style={styles.sectionTitle}>Fecha de inicio</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesScroll}>
-                {currentWeek.map(date => {
+                {startWeek.map(date => {
                   const iso = date.toISOString();
-                  const selected = selectedDate === iso;
+                  const selected = startDate?.toDateString() === date.toDateString();
                   return (
                     <TouchableOpacity
                       key={iso}
                       style={[styles.dateItem, selected && styles.dateItemSelected]}
-                      onPress={() => setSelectedDate(iso)}
+                      onPress={() => handleStartDateSelect(date)}
                     >
                       <Text style={[styles.dateDayName, selected && styles.dateTextSelected]}>
                         {format(date, 'EEE', { locale: es })}
@@ -218,21 +222,35 @@ const ResourceDetailsScreen = () => {
                 })}
               </ScrollView>
 
-              <Text style={styles.sectionTitle}>Seleccioná una hora</Text>
-              <View style={styles.timesGrid}>
-                {TIME_SLOTS.map(slot => {
-                  const selected = selectedTime === slot;
+              <Text style={styles.sectionTitle}>Fecha de devolución</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesScroll}>
+                {endWeek.map(date => {
+                  const selected = endDate?.toDateString() === date.toDateString();
                   return (
                     <TouchableOpacity
-                      key={slot}
-                      style={[styles.timeItem, selected && styles.timeItemSelected]}
-                      onPress={() => setSelectedTime(slot)}
+                      key={date.toISOString()}
+                      style={[styles.dateItem, selected && styles.dateItemSelected]}
+                      onPress={() => setEndDate(date)}
                     >
-                      <Text style={[styles.timeText, selected && styles.timeTextSelected]}>{slot}</Text>
+                      <Text style={[styles.dateDayName, selected && styles.dateTextSelected]}>
+                        {format(date, 'EEE', { locale: es })}
+                      </Text>
+                      <Text style={[styles.dateNumber, selected && styles.dateTextSelected]}>
+                        {format(date, 'dd')}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
+
+              {startDate && endDate && (
+                <View style={styles.summaryBox}>
+                  <Ionicons name="calendar-outline" size={16} color="#2563EB" style={{ marginRight: 8 }} />
+                  <Text style={styles.summaryText}>
+                    {format(startDate, "d 'de' MMMM", { locale: es })} → {format(endDate, "d 'de' MMMM", { locale: es })}
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.deliveryBox}>
                 <Ionicons name="location-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
@@ -242,8 +260,12 @@ const ResourceDetailsScreen = () => {
                 </View>
               </View>
 
-              <TouchableOpacity style={styles.reserveButton} onPress={handleReservation}>
-                <Text style={styles.reserveButtonText}>Confirmar reserva</Text>
+              <TouchableOpacity
+                style={[styles.reserveButton, resource.estado !== 'disponible' && { opacity: 0.5 }]}
+                onPress={handleReservation}
+                disabled={resource.estado !== 'disponible'}
+              >
+                <Text style={styles.reserveButtonText}>Enviar solicitud</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -308,18 +330,28 @@ const styles = StyleSheet.create({
   statusTextAvailable: { color: '#16A34A' },
   sectionTitle: { fontSize: 15, fontWeight: 'bold', color: '#1E293B', marginTop: 16, marginBottom: 8 },
   bodyText: { fontSize: 14, color: '#4B5563', lineHeight: 22 },
-  weekNav: {
+  unavailableBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
-  navBtn: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+  unavailableText: { fontSize: 13, color: '#92400E', fontWeight: '600', flex: 1 },
+  summaryBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
-  navLabel: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+  summaryText: { fontSize: 14, color: '#2563EB', fontWeight: '600' },
   datesScroll: { marginBottom: 20 },
   dateItem: {
     alignItems: 'center',
@@ -334,16 +366,6 @@ const styles = StyleSheet.create({
   dateDayName: { fontSize: 11, color: '#6B7280', fontWeight: '600', textTransform: 'capitalize' },
   dateNumber: { fontSize: 18, fontWeight: 'bold', color: '#1E293B', marginTop: 2 },
   dateTextSelected: { color: '#fff' },
-  timesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  timeItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  timeItemSelected: { backgroundColor: '#1E293B' },
-  timeText: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  timeTextSelected: { color: '#fff' },
   deliveryBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',

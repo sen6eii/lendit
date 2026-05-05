@@ -70,13 +70,44 @@ exports.loginUser = async (req, res) => {
 // Obtener un usuario específico
 exports.getUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate('grupos');
+    const user = await User.findById(req.params.id).select('-contraseña').populate('grupos');
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     res.json(user);
   } catch (error) {
     console.error('Error al obtener el usuario:', error);
     res.status(500).json({ error: 'Error al obtener el usuario' });
+  }
+};
+
+// Cambiar contraseña
+exports.changePassword = async (req, res) => {
+  const { contraseña_actual, contraseña_nueva } = req.body;
+
+  if (req.user.id !== req.params.id) {
+    return res.status(403).json({ error: 'No tenés permiso para cambiar esta contraseña' });
+  }
+  if (!contraseña_actual || !contraseña_nueva) {
+    return res.status(400).json({ error: 'Debés enviar la contraseña actual y la nueva' });
+  }
+  if (contraseña_nueva.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+  }
+
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const isMatch = await bcrypt.compare(contraseña_actual, user.contraseña);
+    if (!isMatch) return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
+
+    user.contraseña = await bcrypt.hash(contraseña_nueva, 10);
+    await user.save();
+
+    res.json({ mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al cambiar la contraseña:', error);
+    res.status(500).json({ error: 'Error al cambiar la contraseña' });
   }
 };
 

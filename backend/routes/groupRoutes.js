@@ -8,6 +8,8 @@ const {
     removeMemberFromGroup,
     addCollaborator,
     removeCollaborator,
+    leaveGroup,
+    deleteGroup,
 } = require('../controllers/groupController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
@@ -45,5 +47,11 @@ router.post('/:groupId/collaborators', authMiddleware, addCollaborator);
 // Ruta: DELETE /api/groups/:groupId/collaborators
 // Requiere autenticación
 router.delete('/:groupId/collaborators', authMiddleware, removeCollaborator);
+
+// Abandonar un grupo
+router.post('/:groupId/leave', authMiddleware, leaveGroup);
+
+// Eliminar un grupo (solo el owner)
+router.delete('/:groupId', authMiddleware, deleteGroup);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getUser, updateUser, addUserReview } = require('../controllers/userController');
+const { registerUser, loginUser, getUser, updateUser, changePassword, addUserReview } = require('../controllers/userController');
 const { authMiddleware } = require('../middlewares/authMiddleware');
 
 // Ruta de registro (No requiere autenticación)
@@ -14,6 +14,9 @@ router.get('/:id', authMiddleware, getUser);
 
 // Actualizar la información de un usuario (Requiere autenticación)
 router.patch('/:id', authMiddleware, updateUser);
+
+// Cambiar contraseña (Requiere autenticación)
+router.patch('/:id/password', authMiddleware, changePassword);
 
 // Agregar una calificación a un usuario (Requiere autenticación)
 router.post('/:id/reviews', authMiddleware, addUserReview);

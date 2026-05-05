@@ -174,6 +174,60 @@ exports.addCollaborator = async (req, res) => {
   }
 };
 
+// Abandonar un grupo (el usuario se elimina a sí mismo)
+exports.leaveGroup = async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    if (group.id_miembro_owner.toString() === userId) {
+      return res.status(400).json({ error: 'El administrador no puede abandonar el grupo. Eliminá el grupo o transferí la administración.' });
+    }
+
+    if (!group.miembros.some(m => m.toString() === userId)) {
+      return res.status(400).json({ error: 'No sos miembro de este grupo' });
+    }
+
+    group.miembros = group.miembros.filter(m => m.toString() !== userId);
+    group.colaboradores = group.colaboradores.filter(c => c.toString() !== userId);
+    await group.save();
+
+    await User.findByIdAndUpdate(userId, { $pull: { grupos: group._id } });
+
+    res.json({ mensaje: 'Saliste del grupo correctamente' });
+  } catch (error) {
+    console.error('Error al abandonar el grupo:', error);
+    res.status(500).json({ error: 'Error al abandonar el grupo' });
+  }
+};
+
+// Eliminar un grupo (solo el owner)
+exports.deleteGroup = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    if (!group.id_miembro_owner.equals(req.user.id)) {
+      return res.status(403).json({ error: 'Solo el administrador puede eliminar el grupo' });
+    }
+
+    // Remove group from all members' user records
+    await User.updateMany({ grupos: group._id }, { $pull: { grupos: group._id } });
+
+    await Group.deleteOne({ _id: group._id });
+
+    res.json({ mensaje: 'Grupo eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar el grupo:', error);
+    res.status(500).json({ error: 'Error al eliminar el grupo' });
+  }
+};
+
 // Eliminar un colaborador del grupo
 exports.removeCollaborator = async (req, res) => {
   const { groupId } = req.params;

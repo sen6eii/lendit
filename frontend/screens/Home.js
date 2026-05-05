@@ -29,6 +29,11 @@ const Home = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        if (response.status === 401) {
+          await AsyncStorage.multiRemove(['userToken', 'userId', 'isFirstTime']);
+          navigation.replace('Login');
+          return;
+        }
         if (response.ok) {
           const userData = await response.json();
           setUserName(userData.nombre || 'Usuario');
@@ -110,7 +115,7 @@ const Home = () => {
 
           <TouchableOpacity
             style={styles.shortcutCard}
-            onPress={() => navigation.navigate('GroupsTab')}
+            onPress={() => navigation.navigate('MyLoans')}
           >
             <View style={[styles.shortcutIcon, { backgroundColor: '#FFF7ED' }]}>
               <Ionicons name="calendar" size={24} color="#EA580C" />

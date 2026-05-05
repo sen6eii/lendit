@@ -62,6 +62,33 @@ const EditResourceScreen = ({ route, navigation }) => {
     fetchResource();
   }, [resourceId]);
 
+  const handleDelete = () => {
+    Alert.alert('Eliminar recurso', '¿Seguro que querés eliminar este recurso? No se puede deshacer.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('userToken');
+            const res = await fetch(`${BASE_URL}/api/resources/${resourceId}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+              navigation.goBack();
+            } else {
+              Alert.alert('Error', data.error || 'No se pudo eliminar el recurso.');
+            }
+          } catch {
+            Alert.alert('Error', 'No se pudo conectar con el servidor.');
+          }
+        },
+      },
+    ]);
+  };
+
   const handleSave = async () => {
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre del recurso es obligatorio.');
@@ -81,6 +108,7 @@ const EditResourceScreen = ({ route, navigation }) => {
           descripcion: { ops: [{ insert: descripcion }] },
           condiciones_uso: { ops: [{ insert: condiciones }] },
           punto_entrega: { texto: puntoEntrega },
+          estado,
         }),
       });
 
@@ -186,6 +214,11 @@ const EditResourceScreen = ({ route, navigation }) => {
               : <Text style={styles.saveButtonText}>Guardar cambios</Text>
             }
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <Text style={styles.deleteButtonText}>Eliminar recurso</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -252,6 +285,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  deleteButtonText: { color: '#DC2626', fontWeight: 'bold', fontSize: 15 },
 });
 
 export default EditResourceScreen;

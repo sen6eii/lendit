@@ -18,7 +18,15 @@ exports.createLoan = async (req, res) => {
       return res.status(400).json({ error: 'Las fechas de inicio y fin no son válidas' });
     }
 
-    // Save loan first to avoid race condition
+    // Reject if there's already a pending or active loan for this resource
+    const existingLoan = await Loan.findOne({
+      recurso_id,
+      estado: { $in: ['pendiente', 'en curso'] },
+    });
+    if (existingLoan) {
+      return res.status(400).json({ error: 'Ya hay una solicitud activa para este recurso' });
+    }
+
     const newLoan = new Loan({
       recurso_id,
       prestatario: req.user.id,
@@ -27,10 +35,7 @@ exports.createLoan = async (req, res) => {
       estado: 'pendiente'
     });
     await newLoan.save();
-
-    // Then lock resource
-    resource.estado = 'en préstamo';
-    await resource.save();
+    // Resource stays 'disponible' until the owner approves
 
     // Notify resource owner
     await Notification.create({
@@ -63,6 +68,9 @@ exports.approveLoan = async (req, res) => {
 
     loan.estado = 'en curso';
     await loan.save();
+
+    resource.estado = 'en préstamo';
+    await resource.save();
 
     await Notification.create({
       usuario_destinatario: loan.prestatario,
