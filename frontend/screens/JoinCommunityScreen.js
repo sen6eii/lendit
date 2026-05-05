@@ -45,8 +45,8 @@ const JoinCommunityScreen = () => {
       </TouchableOpacity>
 
       {/* Texto de exploración */}
-      <TouchableOpacity>
-        <Text style={styles.linkText}>Explorar comunidades cerca de mí</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('ExploreGroups')}>
+        <Text style={styles.linkText}>Explorar comunidades públicas</Text>
       </TouchableOpacity>
 
       {/* Botón para continuar */}

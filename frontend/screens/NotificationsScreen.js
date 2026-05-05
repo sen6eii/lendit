@@ -3,10 +3,19 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../utils/apiConfig';
 
+const TIPO_ICON = {
+  loan_request: 'swap-horizontal',
+  loan_approved: 'checkmark-circle',
+  loan_denied: 'close-circle',
+  loan_cancelled: 'ban',
+  loan_completed: 'ribbon',
+};
+
 const NotificationsScreen = () => {
+  const navigation = useNavigation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +66,16 @@ const NotificationsScreen = () => {
     }
   };
 
+  const handlePress = async (item) => {
+    await handleMarkRead(item._id);
+    if (item.referencia_id && (item.tipo === 'loan_request' || item.tipo === 'loan_approved' || item.tipo === 'loan_denied' || item.tipo === 'loan_cancelled' || item.tipo === 'loan_completed')) {
+      navigation.navigate('GroupsTab', {
+        screen: 'GroupDetails',
+        params: { groupId: item.referencia_id },
+      });
+    }
+  };
+
   const timeAgo = (date) => {
     const diff = Math.floor((Date.now() - new Date(date)) / 60000);
     if (diff < 1) return 'Ahora';
@@ -88,12 +107,12 @@ const NotificationsScreen = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.card, !item.leida && styles.cardUnread]}
-              onPress={() => handleMarkRead(item._id)}
+              onPress={() => handlePress(item)}
               activeOpacity={0.8}
             >
               <View style={styles.cardContent}>
                 <Ionicons
-                  name={item.tipo === 'loan_request' ? 'swap-horizontal' : 'information-circle'}
+                  name={TIPO_ICON[item.tipo] || 'information-circle'}
                   size={22}
                   color={item.leida ? '#9CA3AF' : '#1E293B'}
                   style={styles.icon}

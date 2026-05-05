@@ -9,6 +9,7 @@ import RegisterScreen from '../../screens/RegisterScreen';
 import FirstTimeScreen from '../../screens/FirstTimeScreen';
 import JoinCommunityScreen from '../../screens/JoinCommunityScreen';
 import JoinCommunityConfirmationScreen from '../../screens/JoinCommunityConfirmationScreen';
+import ExploreGroupsScreen from '../../screens/ExploreGroupsScreen';
 import CreateGroupNavigator from './CreateGroupNavigator';
 import ProfileScreen from '../../screens/ProfileScreen';
 import MainTabs from './MainTabs';
@@ -71,6 +72,7 @@ const AppNavigator = () => {
       {/* Otras pantallas */}
       <Stack.Screen name="JoinCommunity" component={JoinCommunityScreen} />
       <Stack.Screen name="JoinCommunityConfirmation" component={JoinCommunityConfirmationScreen} />
+      <Stack.Screen name="ExploreGroups" component={ExploreGroupsScreen} />
       <Stack.Screen name="CreateGroup" component={CreateGroupNavigator} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
