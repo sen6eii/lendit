@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -65,6 +66,7 @@ const NotificationsScreen = () => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notificaciones</Text>
@@ -111,14 +113,16 @@ const NotificationsScreen = () => {
         />
       )}
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#F9EFE6' },
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
     backgroundColor: '#F9EFE6',
-    paddingVertical: 20,
+    paddingVertical: 16,
     paddingHorizontal: 25,
   },
   headerTitle: { fontSize: 24, fontWeight: 'bold' },

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../utils/apiConfig';
+
+const AVATAR_PLACEHOLDER = 'https://ui-avatars.com/api/?background=1E293B&color=fff&size=100&name=U';
 
 const Home = () => {
   const navigation = useNavigation();
@@ -18,27 +21,21 @@ const Home = () => {
         const token = await AsyncStorage.getItem('userToken');
 
         if (!userId || !token) {
-          Alert.alert('Error', 'No se pudo autenticar al usuario. Inicia sesión nuevamente.');
           navigation.replace('Login');
           return;
         }
 
         const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.ok) {
           const userData = await response.json();
           setUserName(userData.nombre || 'Usuario');
-          setProfileImage(userData.foto_perfil || 'https://via.placeholder.com/100x100.png?text=User');
-        } else {
-          Alert.alert('Error', 'No se pudo obtener la información del usuario.');
+          setProfileImage(userData.foto_perfil || '');
         }
       } catch (error) {
-        Alert.alert('Error', 'No se pudo conectar con el servidor.');
+        console.error('Error al obtener usuario:', error);
       }
     };
 
@@ -46,188 +43,222 @@ const Home = () => {
   }, []);
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('isFirstTime');
-    await AsyncStorage.removeItem('userId');
+    await AsyncStorage.multiRemove(['userToken', 'isFirstTime', 'userId']);
     navigation.replace('Login');
   };
 
-  const handleMenuPress = () => {
-    setShowMenu(!showMenu);
-  };
+  const avatarUri = profileImage || `https://ui-avatars.com/api/?background=1E293B&color=fff&size=100&name=${encodeURIComponent(userName || 'U')}`;
 
   return (
-    <View style={styles.container}>
-      {/* Barra superior */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>LendIt!</Text>
-        <TouchableOpacity style={styles.menuButton} onPress={handleMenuPress}>
-          <Ionicons name="ellipsis-horizontal" size={30} color="black" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Menú desplegable */}
-      {showMenu && (
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Text style={styles.menuItemText}>Cerrar sesión</Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>LendIt</Text>
+          <TouchableOpacity style={styles.menuButton} onPress={() => setShowMenu(!showMenu)}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#1E293B" />
           </TouchableOpacity>
         </View>
-      )}
 
-      {/* Contenido principal */}
-      <Text style={styles.welcomeText}>Bienvenido, {userName}</Text>
+        {showMenu && (
+          <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+              <Text style={styles.menuItemText}>Cerrar sesión</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      <TouchableOpacity style={styles.profileContainer} onPress={() => navigation.navigate('Profile')}>
-        <Image source={{ uri: profileImage }} style={styles.profileImage} />
-        <Text style={styles.profileText}>Mi perfil</Text>
-        <Ionicons name="chevron-forward" size={18} color="#6b7280" style={{ marginLeft: 'auto' }} />
-      </TouchableOpacity>
+        {/* Welcome */}
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeLabel}>Bienvenido,</Text>
+          <Text style={styles.welcomeName}>{userName}</Text>
+        </View>
 
-      <Text style={styles.subTitle}>Atajos</Text>
-
-      <View style={styles.shortcutsContainer}>
-        <TouchableOpacity style={styles.shortcut} onPress={() => navigation.navigate('GroupsTab')}>
-          <Image
-            source={{ uri: 'https://vecinfy.com/wp-content/uploads/2024/05/%C2%BFQue-es-una-comunidad-de-vecinos-Derechos-y-obligaciones.-jpg-900x675.jpg' }}
-            style={styles.shortcutImage}
-          />
-          <Text style={styles.shortcutText}>Mis comunidades</Text>
+        {/* Profile card */}
+        <TouchableOpacity style={styles.profileCard} onPress={() => navigation.navigate('Profile')}>
+          <Image source={{ uri: avatarUri }} style={styles.profileImage} />
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{userName}</Text>
+            <Text style={styles.profileSubtext}>Ver y editar perfil</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.shortcut} onPress={() => navigation.navigate('GroupsTab')}>
-          <Image
-            source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Hand_tools.jpg/800px-Hand_tools.jpg' }}
-            style={styles.shortcutImage}
-          />
-          <Text style={styles.shortcutText}>Reservar un recurso</Text>
-        </TouchableOpacity>
+        {/* Shortcuts */}
+        <Text style={styles.sectionTitle}>Accesos rápidos</Text>
+        <View style={styles.shortcutsGrid}>
+          <TouchableOpacity
+            style={styles.shortcutCard}
+            onPress={() => navigation.navigate('GroupsTab')}
+          >
+            <View style={[styles.shortcutIcon, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="people" size={24} color="#2563EB" />
+            </View>
+            <Text style={styles.shortcutText}>Mis comunidades</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.shortcut} onPress={() => navigation.navigate('GroupsTab')}>
-          <Image
-            source={{ uri: 'https://es.mobiletransaction.org/wp-content/uploads/sites/8/2023/12/Sistemas-de-reservas-para-empresas.jpg.webp' }}
-            style={styles.shortcutImage}
-          />
-          <Text style={styles.shortcutText}>Mis reservas</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.shortcutCard}
+            onPress={() => navigation.navigate('GroupsTab')}
+          >
+            <View style={[styles.shortcutIcon, { backgroundColor: '#F0FDF4' }]}>
+              <Ionicons name="construct" size={24} color="#16A34A" />
+            </View>
+            <Text style={styles.shortcutText}>Reservar recurso</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.supportButton} onPress={() => Alert.alert('Soporte', 'Para soporte contactá a soporte@lendit.app')}>
-        <Text style={styles.supportButtonText}>Soporte y ayuda</Text>
-        <Ionicons name="chatbubble-ellipses" size={20} color="#fff" style={styles.reloadIcon} />
-      </TouchableOpacity>
-    </View>
+          <TouchableOpacity
+            style={styles.shortcutCard}
+            onPress={() => navigation.navigate('GroupsTab')}
+          >
+            <View style={[styles.shortcutIcon, { backgroundColor: '#FFF7ED' }]}>
+              <Ionicons name="calendar" size={24} color="#EA580C" />
+            </View>
+            <Text style={styles.shortcutText}>Mis reservas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.shortcutCard}
+            onPress={() => navigation.navigate('JoinCommunity')}
+          >
+            <View style={[styles.shortcutIcon, { backgroundColor: '#FDF4FF' }]}>
+              <Ionicons name="enter" size={24} color="#9333EA" />
+            </View>
+            <Text style={styles.shortcutText}>Unirse con código</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Support */}
+        <TouchableOpacity
+          style={styles.supportButton}
+          onPress={() => Alert.alert('Soporte', 'Contactá a soporte@lendit.app')}
+        >
+          <Ionicons name="chatbubble-ellipses" size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.supportButtonText}>Soporte y ayuda</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F9EFE6' },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F9EFE6',
-    paddingVertical: 20,
-    paddingHorizontal: 25,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
+    color: '#1E293B',
   },
-  menuButton: {
-    position: 'absolute',
-    right: 20,
-  },
+  menuButton: { padding: 4 },
   menuContainer: {
     position: 'absolute',
-    top: 70,
-    right: 20,
+    top: 56,
+    right: 16,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
     zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   menuItem: {
-    padding: 12,
-  },
-  menuItemText: {
-    color: '#333',
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginHorizontal: 25,
-    marginTop: 30,
-    marginBottom: 20,
-  },
-  profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 25,
-    marginBottom: 40,
+    padding: 14,
+  },
+  menuItemText: { color: '#EF4444', fontWeight: '600' },
+  welcomeSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  welcomeLabel: { fontSize: 14, color: '#6B7280' },
+  welcomeName: { fontSize: 26, fontWeight: 'bold', color: '#1E293B', marginTop: 2 },
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 28,
+    marginTop: 4,
+    padding: 14,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 15,
-    backgroundColor: '#ccc',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+    backgroundColor: '#E5E7EB',
   },
-  profileText: {
-    fontSize: 20,
+  profileInfo: { flex: 1 },
+  profileName: { fontSize: 16, fontWeight: '600', color: '#1E293B' },
+  profileSubtext: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#1E293B',
+    marginHorizontal: 20,
+    marginBottom: 12,
   },
-  subTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginHorizontal: 25,
-    marginBottom: 15,
-  },
-  shortcutsContainer: {
+  shortcutsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginHorizontal: 25,
-    marginBottom: 40,
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    marginBottom: 24,
+    gap: 10,
   },
-  shortcut: {
+  shortcutCard: {
+    width: '47%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 4,
+  },
+  shortcutIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  shortcutImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     marginBottom: 10,
   },
   shortcutText: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E293B',
   },
   supportButton: {
     flexDirection: 'row',
-    backgroundColor: '#000',
-    padding: 18,
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 25,
+    marginHorizontal: 20,
+    marginBottom: 24,
   },
   supportButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
-    marginRight: 10,
-  },
-  reloadIcon: {
-    marginLeft: 10,
+    fontSize: 15,
   },
 });
 

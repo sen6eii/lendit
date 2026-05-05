@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.lendit.app",
-      "usesCleartextTraffic": true
+      "package": "com.lendit.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

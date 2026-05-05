@@ -41,6 +41,7 @@ exports.getGroups = async (req, res) => {
   try {
     const groups = await Group.find()
       .populate('miembros', 'nombre email')
+      .populate('id_miembro_owner', 'nombre')
       .populate('recursos');
     res.json(groups);
   } catch (error) {
@@ -77,11 +78,13 @@ exports.addMemberToGroup = async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
 
-    if (!hasPermission(group, req.user.id)) {
+    // Allow self-join (user adding themselves with a group code)
+    const isSelfJoin = miembro_id === req.user.id.toString();
+    if (!isSelfJoin && !hasPermission(group, req.user.id)) {
       return res.status(403).json({ error: 'No tienes permiso para añadir miembros a este grupo' });
     }
 
-    if (group.miembros.includes(miembro_id)) {
+    if (group.miembros.some(m => m.toString() === miembro_id)) {
       return res.status(400).json({ error: 'El usuario ya es miembro del grupo' });
     }
 
