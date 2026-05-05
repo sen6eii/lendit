@@ -41,6 +41,7 @@ const Step2 = ({ navigation, resourceData, setResourceData }) => {
           placeholder="Enlace a video (YouTube, Vimeo, etc)"
           value={tutorialLink}
           onChangeText={setTutorialLink}
+          placeholderTextColor="#9CA3AF"
         />
       )}
 
@@ -51,6 +52,7 @@ const Step2 = ({ navigation, resourceData, setResourceData }) => {
         value={conditions}
         onChangeText={setConditions}
         multiline
+        placeholderTextColor="#9CA3AF"
       />
 
       <View style={styles.row}>
@@ -70,14 +72,15 @@ const Step2 = ({ navigation, resourceData, setResourceData }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1E293B' },
+  label: { fontSize: 16, fontWeight: 'bold', marginBottom: 5, color: '#1E293B' },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+    color: '#1E293B',
   },
   textArea: { height: 100, textAlignVertical: 'top' },
   row: {

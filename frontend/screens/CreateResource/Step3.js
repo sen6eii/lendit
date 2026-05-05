@@ -65,12 +65,14 @@ const Step3 = ({ navigation, resourceData, setResourceData }) => {
             placeholder="Desde (ej. 09:00 AM)"
             value={fromHour}
             onChangeText={setFromHour}
+            placeholderTextColor="#9CA3AF"
           />
           <TextInput
             style={styles.input}
             placeholder="Hasta (ej. 06:00 PM)"
             value={toHour}
             onChangeText={setToHour}
+            placeholderTextColor="#9CA3AF"
           />
         </View>
       )}
@@ -89,8 +91,8 @@ const Step3 = ({ navigation, resourceData, setResourceData }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1E293B' },
+  label: { fontSize: 16, fontWeight: 'bold', marginBottom: 5, color: '#1E293B' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -106,14 +108,15 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
   },
-  counterText: { fontSize: 16, fontWeight: 'bold' },
-  counterValue: { fontSize: 16, marginHorizontal: 10 },
+  counterText: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  counterValue: { fontSize: 16, marginHorizontal: 10, color: '#1E293B' },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+    color: '#1E293B',
   },
   button: {
     backgroundColor: '#007bff',

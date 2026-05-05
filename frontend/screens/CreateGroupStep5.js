@@ -103,7 +103,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'left',
-    marginTop: 80, // Ajustar para que no se superponga con el botón de atrás
+    marginTop: 80,
+    color: '#1E293B',
   },
   subtitle: {
     fontSize: 16,
@@ -125,6 +126,7 @@ const styles = StyleSheet.create({
   groupName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#1E293B',
   },
   groupLocation: {
     fontSize: 14,

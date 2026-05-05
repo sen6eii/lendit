@@ -85,6 +85,7 @@ const EditResourceScreen = ({ route, navigation }) => {
         placeholder="Nombre del recurso"
         value={name}
         onChangeText={setName}
+        placeholderTextColor="#9CA3AF"
       />
 
       <TextInput
@@ -93,6 +94,7 @@ const EditResourceScreen = ({ route, navigation }) => {
         value={description}
         onChangeText={setDescription}
         multiline
+        placeholderTextColor="#9CA3AF"
       />
 
       <TextInput
@@ -100,6 +102,7 @@ const EditResourceScreen = ({ route, navigation }) => {
         placeholder="Categoría"
         value={category}
         onChangeText={setCategory}
+        placeholderTextColor="#9CA3AF"
       />
 
       <TouchableOpacity style={styles.button} onPress={handleUpdateResource}>
@@ -111,13 +114,14 @@ const EditResourceScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1E293B' },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+    color: '#1E293B',
   },
   textArea: { height: 100, textAlignVertical: 'top' },
   button: {

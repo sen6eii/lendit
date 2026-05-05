@@ -45,6 +45,7 @@ const CreateGroupStep2 = () => {
         placeholder="Vecinos unidos"
         value={groupName}
         onChangeText={setGroupName}
+        placeholderTextColor="#9CA3AF"
       />
 
       {/* Selección del tipo de comunidad */}
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     backgroundColor: '#FFF',
+    color: '#1E293B',
   },
   pickerContainer: {
     borderWidth: 1,

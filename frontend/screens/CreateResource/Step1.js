@@ -42,6 +42,7 @@ const Step1 = ({ navigation, resourceData, setResourceData }) => {
           value={nombreRecurso}
           onChangeText={setNombreRecurso}
           placeholder="Ejemplo: Taladro eléctrico"
+          placeholderTextColor="#9CA3AF"
         />
 
         <Text style={styles.label}>Descripción</Text>
@@ -51,6 +52,7 @@ const Step1 = ({ navigation, resourceData, setResourceData }) => {
           onChangeText={setDescripcion}
           placeholder="Ejemplo: Taladro en buen estado..."
           multiline
+          placeholderTextColor="#9CA3AF"
         />
 
         <Text style={styles.label}>Unidades</Text>
@@ -99,13 +101,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
-  label: { fontSize: 16, fontWeight: 'bold', marginTop: 20 },
+  label: { fontSize: 16, fontWeight: 'bold', marginTop: 20, color: '#1E293B' },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     marginTop: 5,
+    color: '#1E293B',
   },
   textArea: { height: 80, textAlignVertical: 'top' },
   unidadesContainer: {
@@ -123,8 +126,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginHorizontal: 10,
   },
-  unidadesButtonText: { fontSize: 16, fontWeight: 'bold' },
-  unidadesCount: { fontSize: 16 },
+  unidadesButtonText: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  unidadesCount: { fontSize: 16, color: '#1E293B' },
   picker: {
     borderWidth: 1,
     borderColor: '#ccc',

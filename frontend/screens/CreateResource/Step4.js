@@ -113,9 +113,9 @@ const Step4 = ({ navigation, resourceData, groupId }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1E293B' },
   scrollView: { marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 15, color: '#1E293B' },
   sectionContent: { fontSize: 16, color: '#555', marginTop: 5 },
   button: {
     backgroundColor: '#007bff',

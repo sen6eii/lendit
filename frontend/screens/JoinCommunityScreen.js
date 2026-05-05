@@ -36,6 +36,7 @@ const JoinCommunityScreen = () => {
         placeholder="GRU-007"
         value={accessCode}
         onChangeText={setAccessCode}
+        placeholderTextColor="#9CA3AF"
       />
 
       {/* Botón de ayuda */}
@@ -86,6 +87,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     backgroundColor: '#fff',
+    color: '#1E293B',
   },
   helpButton: {
     position: 'absolute',
