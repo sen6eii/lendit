@@ -1,5 +1,6 @@
 const Resource = require('../models/Resource');
 const Group = require('../models/Group');
+const User = require('../models/User');
 
 // Crear un nuevo recurso
 exports.createResource = async (req, res) => {
@@ -42,12 +43,13 @@ exports.createResource = async (req, res) => {
   };
   
 
-// Obtener todos los recursos
+// Obtener recursos de los grupos del usuario autenticado
 exports.getResources = async (req, res) => {
   try {
-    const resources = await Resource.find()
-      .populate('propietario', 'nombre email') // Poblar solo información básica del propietario
-      .populate('grupo', 'nombre_grupo'); // Poblar solo información básica del grupo
+    const user = await User.findById(req.user.id).select('grupos');
+    const resources = await Resource.find({ grupo: { $in: user.grupos } })
+      .populate('propietario', 'nombre email')
+      .populate('grupo', 'nombre_grupo');
     res.json(resources);
   } catch (error) {
     console.error('Error al obtener los recursos:', error);

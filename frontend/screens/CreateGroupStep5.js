@@ -35,10 +35,11 @@ const CreateGroupStep5 = () => {
       const result = await response.json();
 
       if (response.ok) {
-        Alert.alert('¡Éxito!', 'Grupo creado con éxito');
-        navigation.replace('MainTabs', { screen: 'HomeTab' })
+        Alert.alert('¡Éxito!', 'Grupo creado con éxito', [
+          { text: 'OK', onPress: () => navigation.replace('MainTabs', { screen: 'GroupsTab' }) },
+        ]);
       } else {
-        Alert.alert('Error', result.message || 'Error al crear el grupo');
+        Alert.alert('Error', result.error || 'Error al crear el grupo');
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo conectar con el servidor');

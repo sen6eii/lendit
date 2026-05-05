@@ -5,7 +5,11 @@ const loanSchema = new mongoose.Schema({
   prestatario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   fecha_inicio: { type: Date, required: true },
   fecha_fin: { type: Date, required: true },
-  estado: { type: String, enum: ['pendiente', 'en curso', 'finalizado', 'retrasado'], default: 'pendiente' }
-});
+  estado: {
+    type: String,
+    enum: ['pendiente', 'en curso', 'finalizado', 'retrasado', 'denegado', 'cancelado'],
+    default: 'pendiente'
+  }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Loan', loanSchema);

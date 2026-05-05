@@ -2,53 +2,143 @@ const Loan = require('../models/Loan');
 const Resource = require('../models/Resource');
 const Group = require('../models/Group');
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 
-// Crear un nuevo préstamo
+// Crear un nuevo préstamo (el recurso se bloquea al hacer la solicitud)
 exports.createLoan = async (req, res) => {
   const { recurso_id, fecha_inicio, fecha_fin } = req.body;
 
   try {
-    // Verificar si el recurso existe y está disponible
     const resource = await Resource.findById(recurso_id).populate('grupo');
     if (!resource) return res.status(404).json({ error: 'Recurso no encontrado' });
-    if (resource.estado !== 'disponible') return res.status(400).json({ error: 'Recurso no disponible' });
-
-    // Validar las fechas
+    if (resource.estado !== 'disponible') {
+      return res.status(400).json({ error: 'El recurso no está disponible en este momento' });
+    }
     if (new Date(fecha_inicio) >= new Date(fecha_fin)) {
       return res.status(400).json({ error: 'Las fechas de inicio y fin no son válidas' });
     }
 
-    // Crear el nuevo préstamo
+    // Save loan first to avoid race condition
     const newLoan = new Loan({
       recurso_id,
-      prestatario: req.user.id, // Usuario autenticado
+      prestatario: req.user.id,
       fecha_inicio,
       fecha_fin,
       estado: 'pendiente'
     });
+    await newLoan.save();
 
-    // Cambiar el estado del recurso a "en préstamo"
+    // Then lock resource
     resource.estado = 'en préstamo';
     await resource.save();
 
-    await newLoan.save();
-
-    // Notificar al propietario del recurso
+    // Notify resource owner
     await Notification.create({
       usuario_destinatario: resource.propietario,
       tipo: 'loan_request',
-      mensaje: `Nuevo pedido de préstamo para "${resource.nombre_recurso}"`,
-      referencia_id: newLoan._id,
+      mensaje: `Nueva solicitud de préstamo para "${resource.nombre_recurso}"`,
+      referencia_id: resource.grupo?._id ?? resource.grupo,
     });
 
-    res.status(201).json({ mensaje: 'Préstamo creado exitosamente', prestamo: newLoan });
+    res.status(201).json({ mensaje: 'Solicitud de préstamo creada', prestamo: newLoan });
   } catch (error) {
     console.error('Error al crear el préstamo:', error);
     res.status(500).json({ error: 'Error al crear el préstamo' });
   }
 };
 
-// Obtener todos los préstamos
+// Aprobar un préstamo (solo el propietario del recurso)
+exports.approveLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id).populate('recurso_id');
+    if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
+    if (loan.estado !== 'pendiente') {
+      return res.status(400).json({ error: 'Solo se pueden aprobar préstamos pendientes' });
+    }
+
+    const resource = loan.recurso_id;
+    if (resource.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Solo el propietario del recurso puede aprobarlo' });
+    }
+
+    loan.estado = 'en curso';
+    await loan.save();
+
+    await Notification.create({
+      usuario_destinatario: loan.prestatario,
+      tipo: 'loan_approved',
+      mensaje: `Tu solicitud de préstamo para "${resource.nombre_recurso}" fue aprobada`,
+      referencia_id: loan._id,
+    });
+
+    res.json({ mensaje: 'Préstamo aprobado', prestamo: loan });
+  } catch (error) {
+    console.error('Error al aprobar el préstamo:', error);
+    res.status(500).json({ error: 'Error al aprobar el préstamo' });
+  }
+};
+
+// Denegar un préstamo (solo el propietario del recurso)
+exports.denyLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id).populate('recurso_id');
+    if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
+    if (loan.estado !== 'pendiente') {
+      return res.status(400).json({ error: 'Solo se pueden denegar préstamos pendientes' });
+    }
+
+    const resource = loan.recurso_id;
+    if (resource.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Solo el propietario del recurso puede denegarlo' });
+    }
+
+    loan.estado = 'denegado';
+    await loan.save();
+
+    resource.estado = 'disponible';
+    await resource.save();
+
+    await Notification.create({
+      usuario_destinatario: loan.prestatario,
+      tipo: 'loan_denied',
+      mensaje: `Tu solicitud de préstamo para "${resource.nombre_recurso}" fue rechazada`,
+      referencia_id: loan._id,
+    });
+
+    res.json({ mensaje: 'Préstamo denegado', prestamo: loan });
+  } catch (error) {
+    console.error('Error al denegar el préstamo:', error);
+    res.status(500).json({ error: 'Error al denegar el préstamo' });
+  }
+};
+
+// Cancelar un préstamo (solo el prestatario, y solo si está pendiente)
+exports.cancelLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id).populate('recurso_id');
+    if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
+    if (loan.prestatario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Solo el solicitante puede cancelar el préstamo' });
+    }
+    if (loan.estado !== 'pendiente') {
+      return res.status(400).json({ error: 'Solo se pueden cancelar préstamos pendientes' });
+    }
+
+    loan.estado = 'cancelado';
+    await loan.save();
+
+    const resource = loan.recurso_id;
+    resource.estado = 'disponible';
+    await resource.save();
+
+    res.json({ mensaje: 'Préstamo cancelado', prestamo: loan });
+  } catch (error) {
+    console.error('Error al cancelar el préstamo:', error);
+    res.status(500).json({ error: 'Error al cancelar el préstamo' });
+  }
+};
+
+// Obtener todos los préstamos (admin)
 exports.getLoans = async (req, res) => {
   try {
     const loans = await Loan.find()
@@ -56,7 +146,6 @@ exports.getLoans = async (req, res) => {
       .populate('prestatario', 'nombre email');
     res.json(loans);
   } catch (error) {
-    console.error('Error al obtener los préstamos:', error);
     res.status(500).json({ error: 'Error al obtener los préstamos' });
   }
 };
@@ -68,112 +157,113 @@ exports.getLoan = async (req, res) => {
       .populate('recurso_id', 'nombre_recurso estado')
       .populate('prestatario', 'nombre email');
     if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
-
     res.json(loan);
   } catch (error) {
-    console.error('Error al obtener el préstamo:', error);
     res.status(500).json({ error: 'Error al obtener el préstamo' });
   }
 };
 
-// Obtener préstamos del usuario autenticado
-const mongoose = require('mongoose');
-
+// Obtener préstamos del usuario autenticado como prestatario
 exports.getUserLoans = async (req, res) => {
-  console.log('Entrando a getUserLoans'); // Log inicial
-  console.log('Usuario autenticado:', req.user); // Confirmar datos del usuario
-
   try {
-      // Validar que req.user.id sea un ObjectId válido
-      if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
-          console.log('ID de usuario no válido:', req.user.id);
-          return res.status(400).json({ error: 'ID de usuario no válido' });
-      }
-
-      // Log para depurar el filtro usado
-      console.log('Filtro usado en Loan.find:', { prestatario: req.user.id });
-
-      // Realizar la consulta con un ObjectId válido
-      const loans = await Loan.find({ prestatario: new mongoose.Types.ObjectId(req.user.id) })
-          .populate('recurso_id', 'nombre_recurso estado');
-
-      res.json(loans); // Responder con los préstamos encontrados
+    if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+      return res.status(400).json({ error: 'ID de usuario no válido' });
+    }
+    const loans = await Loan.find({ prestatario: new mongoose.Types.ObjectId(req.user.id) })
+      .populate('recurso_id', 'nombre_recurso estado fotos')
+      .sort({ createdAt: -1 });
+    res.json(loans);
   } catch (error) {
-      console.error('Error al obtener los préstamos del usuario:', error); // Log del error
-      res.status(500).json({ error: 'Error al obtener los préstamos del usuario' });
+    console.error('Error al obtener los préstamos del usuario:', error);
+    res.status(500).json({ error: 'Error al obtener los préstamos del usuario' });
   }
 };
 
-
-exports.getGroupLoans = async (req, res) => {
-    const { groupId } = req.params; // ID del grupo
-  
-    try {
-      // Verificar si el grupo existe
-      const group = await Group.findById(groupId);
-      if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
-  
-      // Verificar permisos: Solo administradores o colaboradores pueden acceder a los préstamos del grupo
-      const isAuthorized =
-        group.id_miembro_owner.equals(req.user.id) || group.colaboradores.includes(req.user.id);
-  
-      if (!isAuthorized) {
-        return res.status(403).json({ error: 'No tienes permiso para acceder a los préstamos de este grupo' });
-      }
-  
-      // Buscar préstamos relacionados con el grupo
-      const loans = await Loan.find()
-        .populate({
-          path: 'recurso_id',
-          match: { grupo: groupId }, // Filtrar recursos que pertenezcan al grupo
-          select: 'nombre_recurso estado'
-        })
-        .populate('prestatario', 'nombre email');
-  
-      // Filtrar préstamos relacionados con recursos del grupo
-      const groupLoans = loans.filter((loan) => loan.recurso_id !== null);
-  
-      res.json(groupLoans);
-    } catch (error) {
-      console.error('Error al obtener los préstamos del grupo:', error);
-      res.status(500).json({ error: 'Error al obtener los préstamos del grupo' });
-    }
-  };
-  
-
-// Confirmar finalización de un préstamo
-exports.confirmLoanCompletion = async (req, res) => {
-  const { id } = req.params; // ID del préstamo
-
+// Obtener préstamos pendientes de recursos que el usuario posee
+exports.getOwnerLoans = async (req, res) => {
   try {
-    // Buscar el préstamo
-    const loan = await Loan.findById(id).populate('recurso_id');
-    if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
+    const resources = await Resource.find({ propietario: req.user.id }).select('_id nombre_recurso');
+    const resourceIds = resources.map(r => r._id);
 
-    const resource = loan.recurso_id;
+    const loans = await Loan.find({
+      recurso_id: { $in: resourceIds },
+      estado: 'pendiente'
+    })
+      .populate('recurso_id', 'nombre_recurso fotos')
+      .populate('prestatario', 'nombre email')
+      .sort({ createdAt: -1 });
 
-    // Verificar permisos: Solo administradores o colaboradores pueden confirmar
-    const group = await Group.findById(resource.grupo);
+    res.json(loans);
+  } catch (error) {
+    console.error('Error al obtener los préstamos como propietario:', error);
+    res.status(500).json({ error: 'Error al obtener las solicitudes' });
+  }
+};
+
+// Obtener préstamos de un grupo específico (admin del grupo)
+exports.getGroupLoans = async (req, res) => {
+  const { groupId } = req.params;
+  try {
+    const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
 
     const isAuthorized =
       group.id_miembro_owner.equals(req.user.id) || group.colaboradores.includes(req.user.id);
-
     if (!isAuthorized) {
-      return res.status(403).json({ error: 'No tienes permiso para confirmar la finalización de este préstamo' });
+      return res.status(403).json({ error: 'No tenés permiso para acceder a los préstamos de este grupo' });
     }
 
-    // Cambiar el estado del préstamo a "finalizado"
+    const loans = await Loan.find()
+      .populate({
+        path: 'recurso_id',
+        match: { grupo: groupId },
+        select: 'nombre_recurso estado fotos propietario'
+      })
+      .populate('prestatario', 'nombre email')
+      .sort({ createdAt: -1 });
+
+    res.json(loans.filter(l => l.recurso_id !== null));
+  } catch (error) {
+    console.error('Error al obtener los préstamos del grupo:', error);
+    res.status(500).json({ error: 'Error al obtener los préstamos del grupo' });
+  }
+};
+
+// Confirmar finalización de un préstamo (propietario del recurso)
+exports.confirmLoanCompletion = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id).populate('recurso_id');
+    if (!loan) return res.status(404).json({ error: 'Préstamo no encontrado' });
+
+    const resource = loan.recurso_id;
+    const group = await Group.findById(resource.grupo);
+    if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    const isAuthorized =
+      group.id_miembro_owner.equals(req.user.id) ||
+      group.colaboradores.includes(req.user.id) ||
+      resource.propietario.toString() === req.user.id;
+
+    if (!isAuthorized) {
+      return res.status(403).json({ error: 'No tenés permiso para confirmar este préstamo' });
+    }
+
     loan.estado = 'finalizado';
     await loan.save();
 
-    // Cambiar el estado del recurso a "disponible"
     resource.estado = 'disponible';
     await resource.save();
 
-    res.json({ mensaje: 'Préstamo confirmado como finalizado', prestamo: loan });
+    await Notification.create({
+      usuario_destinatario: loan.prestatario,
+      tipo: 'loan_completed',
+      mensaje: `El préstamo de "${resource.nombre_recurso}" fue marcado como finalizado`,
+      referencia_id: loan._id,
+    });
+
+    res.json({ mensaje: 'Préstamo finalizado correctamente', prestamo: loan });
   } catch (error) {
-    console.error('Error al confirmar la finalización del préstamo:', error);
+    console.error('Error al finalizar el préstamo:', error);
     res.status(500).json({ error: 'Error al confirmar la finalización del préstamo' });
   }
 };

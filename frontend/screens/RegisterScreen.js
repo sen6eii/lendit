@@ -68,7 +68,7 @@ console.log('Status de la respuesta:', response.ok);
           navigation.replace('Login');
         }
       } else {
-        Alert.alert('Error', data.mensaje || 'Error al registrar');
+        Alert.alert('Error', data.error || 'Error al registrar');
       }
     } catch (error) {
       console.error('Error durante el registro:', error);

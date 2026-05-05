@@ -9,24 +9,42 @@ const hasPermission = (group, userId) => {
 
 
 
-// Crear un nuevo grupo
+// Crear un nuevo grupo (reintenta si el código ya existe)
 exports.createGroup = async (req, res) => {
-  const { grupo_codigo, nombre_grupo, tipo_comunidad, ubicacion, grupo_privado } = req.body;
+  const { nombre_grupo, tipo_comunidad, ubicacion, grupo_privado } = req.body;
+  let { grupo_codigo } = req.body;
 
   try {
-    const newGroup = new Group({
-      grupo_codigo,
-      nombre_grupo,
-      tipo_comunidad,
-      ubicacion,
-      grupo_privado,
-      id_miembro_owner: req.user.id,
-      miembros: [req.user.id]
-    });
+    let attempts = 0;
+    let newGroup;
+    while (attempts < 5) {
+      try {
+        newGroup = new Group({
+          grupo_codigo,
+          nombre_grupo,
+          tipo_comunidad,
+          ubicacion,
+          grupo_privado,
+          id_miembro_owner: req.user.id,
+          miembros: [req.user.id]
+        });
+        await newGroup.save();
+        break;
+      } catch (err) {
+        if (err.code === 11000) {
+          // Duplicate code — generate a new one and retry
+          grupo_codigo = `GR${Math.floor(10000 + Math.random() * 90000)}`;
+          attempts++;
+        } else {
+          throw err;
+        }
+      }
+    }
 
-    await newGroup.save();
+    if (!newGroup || !newGroup._id) {
+      return res.status(500).json({ error: 'No se pudo generar un código único para el grupo' });
+    }
 
-    // Agregar el grupo al usuario creador
     await User.findByIdAndUpdate(req.user.id, { $push: { grupos: newGroup._id } });
 
     res.status(201).json({ mensaje: 'Grupo creado exitosamente', grupo: newGroup });
