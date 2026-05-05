@@ -68,7 +68,7 @@ exports.approveLoan = async (req, res) => {
       usuario_destinatario: loan.prestatario,
       tipo: 'loan_approved',
       mensaje: `Tu solicitud de préstamo para "${resource.nombre_recurso}" fue aprobada`,
-      referencia_id: loan._id,
+      referencia_id: resource.grupo,
     });
 
     res.json({ mensaje: 'Préstamo aprobado', prestamo: loan });
@@ -102,7 +102,7 @@ exports.denyLoan = async (req, res) => {
       usuario_destinatario: loan.prestatario,
       tipo: 'loan_denied',
       mensaje: `Tu solicitud de préstamo para "${resource.nombre_recurso}" fue rechazada`,
-      referencia_id: loan._id,
+      referencia_id: resource.grupo,
     });
 
     res.json({ mensaje: 'Préstamo denegado', prestamo: loan });
@@ -258,7 +258,7 @@ exports.confirmLoanCompletion = async (req, res) => {
       usuario_destinatario: loan.prestatario,
       tipo: 'loan_completed',
       mensaje: `El préstamo de "${resource.nombre_recurso}" fue marcado como finalizado`,
-      referencia_id: loan._id,
+      referencia_id: resource.grupo,
     });
 
     res.json({ mensaje: 'Préstamo finalizado correctamente', prestamo: loan });
